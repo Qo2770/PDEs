@@ -11,8 +11,7 @@ from beartype import beartype as typechecker
 @jaxtyped(typechecker=typechecker)
 def poisson_2d(in_data: Float[np.ndarray, "N N"], 
             N=256, 
-            L=1,
-            sig=0.1) -> Float[np.ndarray, "N N"]:
+            L=1) -> tuple[Float[np.ndarray, "N N"], Float[np.ndarray, "N N"], Float[np.ndarray, "N N"], Float[np.ndarray, "N N"]]:
     
     # Translated from Matlab 
     # Originally from University of Washington, Department of Atmospheric Sciences
@@ -30,7 +29,7 @@ def poisson_2d(in_data: Float[np.ndarray, "N N"],
     u = np.fft.ifft2(f_hat / delsq).real
     u -= u[0, 0]
 
-    return u
+    return u, kx, ky, delsq
 
 def construct_f(xx, yy, N=256, L=1, sig=0.1):
 
