@@ -5,10 +5,8 @@
 #include <stdlib.h>
 
 #define N 8 // Size of the grid (must be a power of 2)
-#define N2 8 
-#define N3 8 
 #define L 1.0 // Physical size of the domain
-#define SIG 0.1
+#define SIG 0.1 // Width << 1
 
 void initialize_rhs(float ***rhs, int n, float l) {
     for (int i = 1; i <= n; i++) {
@@ -26,37 +24,16 @@ int main() {
 	int i, j;
 
 	float ***data, **speq;
-	data = f3tensor(1, 1, 1, N2, 1, N3);
-	speq = matrix(1, 1, 1, 2*N2);
+	data = f3tensor(1, 1, 1, N, 1, N);
+	speq = matrix(1, 1, 1, 2*N);
 	
 	float **phi = matrix(1, N, 1, N);   // Solution in real space
 
 	// Initialize the data
 	initialize_rhs(data, N, L);
 
-	for (i = 1; i <= N2; i++) {
-		for (j = 1; j <= N2; j++) {
-			printf("%f ", data[1][i][j]);
-		}
-		printf("\n");
-	}
-	printf("\n");
-	printf("\n");
-	printf("\n");
-
-
 	// Perform forward FFT
-	rlft3(data, speq, 1, N2, N3, 1);
-
-	for (i = 1; i <= N2; i++) {
-		for (j = 1; j <= N2; j++) {
-			printf("%f ", data[1][i][j]);
-		}
-		printf("\n");
-	}
-	printf("\n");
-	printf("\n");
-	printf("\n");
+	rlft3(data, speq, 1, N, N, 1);
 
 	// Solve Poisson equation in Fourier space
 	for (i = 1; i <= N; i++) {
@@ -87,29 +64,8 @@ int main() {
 		speq[1][2*(i-1)] /= k_squared;	
 	}
 
-	for (i = 1; i <= N2; i++) {
-		for (j = 1; j <= N2; j++) {
-			printf("%f ", data[1][i][j]);
-		}
-		printf("%f %f ", speq[1][2*(i-1)+1], speq[1][2*(i-1)]);
-		printf("\n");
-	}
-	printf("\n");
-	printf("\n");
-	printf("\n");
-
 	// Perform inverse FFT
-	rlft3(data,speq,1,N2,N3,-1);
-
-	for (i = 1; i <= N2; i++) {
-		for (j = 1; j <= N2; j++) {
-			printf("%f ", data[1][i][j] * 2 / (N2 * N2));
-		}
-		printf("\n");
-	}
-	printf("\n");
-	printf("\n");
-	printf("\n");
+	rlft3(data, speq, 1, N, N, -1);
 
 	// Copy data array back to phi
 	for (i = 1; i <= N; i++) {
@@ -118,7 +74,7 @@ int main() {
 		}
 	}
 
-	// Print some of the solution values
+	// Print the solution values
 	for (i = 1; i <= N; i++) {
 		for (j = 1; j <= N; j++) {
 			printf("%f ", phi[i][j] - phi[1][1]);
@@ -128,8 +84,8 @@ int main() {
 
 	// Clean up
 	free_matrix(phi, 1, N, 1, N);
-	free_matrix(speq, 1, 1, 1, 2 * N2);
-	free_f3tensor(data, 1, 1, 1, N2, 1, N3);
+	free_matrix(speq, 1, 1, 1, 2 * N);
+	free_f3tensor(data, 1, 1, 1, N, 1, N);
 
 	return 0;
 }
