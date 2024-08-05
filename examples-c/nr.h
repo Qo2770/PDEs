@@ -21,8 +21,12 @@ typedef struct {
 
 #include <stdio.h>
 
+void cosft1(float y[], int n);
+void cosft2(float y[], int n, int isign);
 void four1(float data[], unsigned long nn, int isign);
 void fourn(float data[], unsigned long nn[], int ndim, int isign);
 void realft(float data[], unsigned long n, int isign);
 void rlft3(float ***data, float **speq, unsigned long nn1, unsigned long nn2,
            unsigned long nn3, int isign);
+void sinft(float y[], int n);
+

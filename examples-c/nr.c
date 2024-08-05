@@ -224,3 +224,131 @@ void rlft3(float ***data, float **speq, unsigned long nn1, unsigned long nn2,
 	if (isign == -1)
 		fourn(&data[1][1][1]-1,nn,3,isign);
 }
+
+void sinft(float y[], int n)
+{
+	void realft(float data[], unsigned long n, int isign);
+	int j,n2=n+2;
+	float sum,y1,y2;
+	double theta,wi=0.0,wr=1.0,wpi,wpr,wtemp;
+
+	theta=3.14159265358979/(double) n;
+	wtemp=sin(0.5*theta);
+	wpr = -2.0*wtemp*wtemp;
+	wpi=sin(theta);
+	y[1]=0.0;
+	for (j=2;j<=(n>>1)+1;j++) {
+		wr=(wtemp=wr)*wpr-wi*wpi+wr;
+		wi=wi*wpr+wtemp*wpi+wi;
+		y1=wi*(y[j]+y[n2-j]);
+		y2=0.5*(y[j]-y[n2-j]);
+		y[j]=y1+y2;
+		y[n2-j]=y1-y2;
+	}
+	realft(y,n,1);
+	y[1]*=0.5;
+	sum=y[2]=0.0;
+	for (j=1;j<=n-1;j+=2) {
+		sum += y[j];
+		y[j]=y[j+1];
+		y[j+1]=sum;
+	}
+}
+
+#define PI 3.141592653589793
+
+void cosft1(float y[], int n)
+{
+	void realft(float data[], unsigned long n, int isign);
+	int j,n2;
+	float sum,y1,y2;
+	double theta,wi=0.0,wpi,wpr,wr=1.0,wtemp;
+
+	theta=PI/n;
+	wtemp=sin(0.5*theta);
+	wpr = -2.0*wtemp*wtemp;
+	wpi=sin(theta);
+	sum=0.5*(y[1]-y[n+1]);
+	y[1]=0.5*(y[1]+y[n+1]);
+	n2=n+2;
+	for (j=2;j<=(n>>1);j++) {
+		wr=(wtemp=wr)*wpr-wi*wpi+wr;
+		wi=wi*wpr+wtemp*wpi+wi;
+		y1=0.5*(y[j]+y[n2-j]);
+		y2=(y[j]-y[n2-j]);
+		y[j]=y1-wi*y2;
+		y[n2-j]=y1+wi*y2;
+		sum += wr*y2;
+	}
+	realft(y,n,1);
+	y[n+1]=y[2];
+	y[2]=sum;
+	for (j=4;j<=n;j+=2) {
+		sum += y[j];
+		y[j]=sum;
+	}
+}
+#undef PI
+
+#define PI 3.141592653589793
+
+void cosft2(float y[], int n, int isign)
+{
+	void realft(float data[], unsigned long n, int isign);
+	int i;
+	float sum,sum1,y1,y2,ytemp;
+	double theta,wi=0.0,wi1,wpi,wpr,wr=1.0,wr1,wtemp;
+
+	theta=0.5*PI/n;
+	wr1=cos(theta);
+	wi1=sin(theta);
+	wpr = -2.0*wi1*wi1;
+	wpi=sin(2.0*theta);
+	if (isign == 1) {
+		for (i=1;i<=n/2;i++) {
+			y1=0.5*(y[i]+y[n-i+1]);
+			y2=wi1*(y[i]-y[n-i+1]);
+			y[i]=y1+y2;
+			y[n-i+1]=y1-y2;
+			wr1=(wtemp=wr1)*wpr-wi1*wpi+wr1;
+			wi1=wi1*wpr+wtemp*wpi+wi1;
+		}
+		realft(y,n,1);
+		for (i=3;i<=n;i+=2) {
+			wr=(wtemp=wr)*wpr-wi*wpi+wr;
+			wi=wi*wpr+wtemp*wpi+wi;
+			y1=y[i]*wr-y[i+1]*wi;
+			y2=y[i+1]*wr+y[i]*wi;
+			y[i]=y1;
+			y[i+1]=y2;
+		}
+		sum=0.5*y[2];
+		for (i=n;i>=2;i-=2) {
+			sum1=sum;
+			sum += y[i];
+			y[i]=sum1;
+		}
+	} else if (isign == -1) {
+		ytemp=y[n];
+		for (i=n;i>=4;i-=2) y[i]=y[i-2]-y[i];
+		y[2]=2.0*ytemp;
+		for (i=3;i<=n;i+=2) {
+			wr=(wtemp=wr)*wpr-wi*wpi+wr;
+			wi=wi*wpr+wtemp*wpi+wi;
+			y1=y[i]*wr+y[i+1]*wi;
+			y2=y[i+1]*wr-y[i]*wi;
+			y[i]=y1;
+			y[i+1]=y2;
+		}
+		realft(y,n,-1);
+		for (i=1;i<=n/2;i++) {
+			y1=y[i]+y[n-i+1];
+			y2=(0.5/wi1)*(y[i]-y[n-i+1]);
+			y[i]=0.5*(y1+y2);
+			y[n-i+1]=0.5*(y1-y2);
+			wr1=(wtemp=wr1)*wpr-wi1*wpi+wr1;
+			wi1=wi1*wpr+wtemp*wpi+wi1;
+		}
+	}
+}
+#undef PI
