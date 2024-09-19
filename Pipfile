@@ -11,6 +11,7 @@ sympy = "*"
 wolframclient = "*"
 jaxtyping = "*"
 beartype = "*"
+scipy = "*"
 
 [dev-packages]
 
