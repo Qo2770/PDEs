@@ -12,6 +12,8 @@ wolframclient = "*"
 jaxtyping = "*"
 beartype = "*"
 scipy = "*"
+seaborn = "*"
+scikit-image = "*"
 
 [dev-packages]
 
