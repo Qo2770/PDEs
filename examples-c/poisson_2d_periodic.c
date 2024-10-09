@@ -34,6 +34,14 @@ int main() {
 	// Initialize the data
 	initialize_rhs(data, N, L);
 
+	for (i = 0; i < N; i++) {
+		for (j = 0; j < 2*N; j++) {
+			printf("%f ", data[i*2*N+j+1]);
+		}
+		printf("\n");
+	}
+	printf("\n");
+
 	// Perform forward FFT
 	fourn(data, nn, 2, 1);
 
