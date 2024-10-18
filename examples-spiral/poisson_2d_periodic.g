@@ -13,9 +13,7 @@ f := Mat([
 	[0.0005, 2.027, 18.6732, 2.027]
 ]);
 
-# FIXME: Is there an existing PI const in SPIRAL?
-PI := 3.141592653589793238462643383279502;
-factor := 2*PI/l;
+factor := 2*d_PI/l;
 
 k := factor * ([0..n/2]::-Reversed([1..(n/2-1)]));
 
