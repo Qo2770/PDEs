@@ -2,6 +2,20 @@ ImportAll(realdft);
 ImportAll(filtering);
 ImportAll(dct_dst);
 
+# === PREAMBLE ===
+
+Class(_FList, FList, rec(tolist := self >> self.list));
+SkewCirculant := l -> Toeplitz(Reversed(l)::(-DropLast(Reversed(l), 1)));
+spiral.code.FList.tolist := self >> List(self.list, V);
+_mat := m -> When(IsSPL(m), MatSPL(m), m);
+AssertEqualMat := (a, b) -> let(am := _mat(a), bm := _mat(b), When(am=bm, true, Error(InfinityNormMat(am-bm))));
+AssertEqualVec := (a, b) -> When(a=b, true, Error(InfinityNormMat([a-b])));
+RCDiagTaps := (t, taps) -> RCDiag(_FList(TReal, MatSPL(t) * taps));
+RotDiag := lst -> RCDiag(_FList(TReal, List(Zip2(lst, Flat(Replicate(Length(lst)/2, [1, -1]))), Product)));
+_Diag := l -> Diag(_FList(TReal, l));
+
+# ================
+
 n := 4;
 l := 1;
 
@@ -37,7 +51,7 @@ delsq_inv[1] := 0;
 
 # FFT the input and multiply with delsq elements
 fhat_fft := MatSPL(MDDFT([4, 4], 1)) * f_flat;
-fhat := MatSPL(Diag(fhat_fft)) * delsq_inv;
+fhat := MatSPL(_Diag(fhat_fft)) * delsq_inv;
 
 phi := (1/n^2) * ( fhat * MatSPL(MDDFT([4, 4], -1)) );
 
@@ -46,6 +60,4 @@ phi_real := List(phi, v->Value(TReal, Re(v)));
 
 # Zero-mean the result by convention
 phi_real_zero_mean := phi_real - phi_real[1];
-
-pm(phi_real_zero_mean);
 
