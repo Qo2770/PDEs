@@ -37,12 +37,20 @@ f := Mat([
 	[ 1.220733e-05, 2.040752e-03, 7.111223e-02, 5.513290e-01, 1.066115e+00, 5.513290e-01, 7.111223e-02, 2.040752e-03 ] 
 ]);
 
-2d_dft := MatSPL(MDDFT([n, n], 1));
-2d_idft := (1/n^2) * MatSPL(MDDFT([n, n], -1));
+2d_dft := MDDFT([n, n], -1);
+2d_idft := (1/n^2) * MDDFT([n, n], 1);
 
 factor := 2*d_PI/l;
 
-k := factor * ([0..n/2]::-Reversed([1..(n/2-1)]));
+k := ([0..n/2]::-Reversed([1..(n/2-1)]));
+# First factor should be ->0, but actually setting it
+# to zero both breaks SPIRAL and makes the operator
+# non-invertible
+# NOTE: Code seems extremely sensitive to this value:
+# too small and it breaks, too big and it breaks
+#k[1] := 1/9999999999999999;
+#k[1] := 1/n;
+#k[1] := 1/999999;
 
 kx := Mat(Replicate(n, k));
 ky := kx.transpose();
@@ -56,18 +64,19 @@ ky_sq := List(ky_flat, v->v*v);
 
 # Setup frequency constants
 delsq := -(kx_sq + ky_sq);
-delsq_inv := List(delsq, v->1/v);
 
 # NOTE: Work-around since inf does not work properly in SPIRAL
 # (dividing by it gives nan instead of 0)
-delsq_inv[1] := 0;
-
-delsq_inv_mat := MatSPL(_Diag(delsq_inv));
+# (fixed by using k[0]->0 instead of k[0]:=0)
+delsq_inv := List(delsq, v->When(v=0, 0, 1/v));
+delsq_inv_mat := _Diag(delsq_inv);
 
 # Construct the 2D Poisson operator and apply to f
 # FFT the input, multiply with delsq elements, then IFFT
 op := 2d_idft * delsq_inv_mat * 2d_dft;
-phi := op * f_flat;
+inv_op := 2d_dft * _Diag(delsq) * 2d_idft;
+phi := (1/(factor^2)) * MatSPL(op) * f_flat;
+#phi := op * f_flat;
 
 # Convert to reals
 phi_real := List(phi, v->Value(TReal, Re(v)));
