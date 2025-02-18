@@ -1,8 +1,59 @@
-#include "nr.h"     // Include Numerical Recipes FFT functions
-#include "nrutil.h" // Include Numerical Recipes utility functions
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+//
+// Modified numerical recipes transform
+//
+
+#define SWAP(a, b)      tempr = a; a = b; b = tempr
+
+void four1(double* data, int n, int isign) {
+	int nn, mmax, m, j, istep, i;
+	double wtemp, wr, wpr, wpi, wi, theta, tempr, tempi;
+	nn = n << 1;
+	j = 1;
+	for (i = 1; i < nn; i += 2) {
+		if (j > i) {
+			SWAP(data[j - 1], data[i - 1]);
+			SWAP(data[j], data[i]);
+		}
+		m = n;
+		while (m >= 2 && j > m) {
+			j -= m;
+			m >>= 1;
+		}
+		j += m;
+	}
+	mmax = 2;
+	while (nn > mmax) {
+		istep = mmax << 1;
+		theta = isign * (6.28318530717959 / mmax);
+		wtemp = sin(0.5 * theta);
+		wpr = -2.0 * wtemp * wtemp;
+		wpi = sin(theta);
+		wr = 1.0;
+		wi = 0.0;
+		for (m = 1; m < mmax; m += 2) {
+			for (i = m; i <= nn; i += istep) {
+				j = i + mmax;
+				tempr = wr * data[j - 1] - wi * data[j];
+				tempi = wr * data[j] + wi * data[j - 1];
+				data[j - 1] = data[i - 1] - tempr;
+				data[j] = data[i] - tempi;
+				data[i - 1] += tempr;
+				data[i] += tempi;
+			}
+			wr = (wtemp = wr) * wpr - wi * wpi + wr;
+			wi = wi * wpr + wtemp * wpi + wi;
+		}
+		mmax = istep;
+	}
+}
+
+// 
+// End NR code
+//
 
 #define N 16 // Size of the grid (must be a power of 2)
 #define L 1.0 // Physical size of the domain
@@ -11,20 +62,20 @@
 // Adapted from Brian's Python code
 //
 
-void initialize_rhs(float *rhs) {
+void initialize_rhs(double *rhs) {
     for (int i = 0; i < N; i++) {
-		float x = ((float)i)/N;
-		float pi_sq = M_PI * M_PI;
-		rhs[2*i+1] = -16 * pi_sq * sin(4 * M_PI * x) - 8 * pi_sq * pow(sin(2 * M_PI * x), 2.0) + 8 * pi_sq * pow(cos(2 * M_PI * x), 2.0);
+		double x = ((double)i)/N;
+		double pi_sq = M_PI * M_PI;
+		rhs[2*i] = -16 * pi_sq * sin(4 * M_PI * x) - 8 * pi_sq * pow(sin(2 * M_PI * x), 2.0) + 8 * pi_sq * pow(cos(2 * M_PI * x), 2.0);
     }
 }
 
-void construct_ksq(float *ksq) {
+void construct_ksq(double *ksq) {
 
 	int i;
-	float k;
+	double k;
 
-	for (i = 0; i <= N; i++) {
+	for (i = 0; i < N; i++) {
 		
 		k = (i <= N / 2) ? i : i - N;
 		
@@ -35,22 +86,22 @@ void construct_ksq(float *ksq) {
 
 } 
 
-void apply_ksq(float *rhs, float *ksq) {
+void apply_ksq(double *rhs, double *ksq) {
 	
 	int i;
 	
-	for (i = 0; i <= N; i++) {
+	for (i = 0; i < N; i++) {
 		
 		// At 0,0 don't normalize
 		if (ksq[i] != 0) {
-			rhs[2*i+1] /= ksq[i];
-			rhs[2*i+2] /= ksq[i]; 
+			rhs[2*i] /= ksq[i];
+			rhs[2*i+1] /= ksq[i]; 
 		} 
 	}
 
 	// Zero out first component
+	rhs[0] = 0.0;
 	rhs[1] = 0.0;
-	rhs[2] = 0.0;
 
 }
 
@@ -58,19 +109,19 @@ int main() {
 
 	int i, j;
 
-	float *data;
-	float *ksq;
+	double *data;
+	double *ksq;
 	
-	data = vector(1, 2*N); // Flattened data array, 2*N^2 to hold complex values, 1-indexed
-	ksq = vector(0, N-1); // Flattened data array, 2*N^2 to hold complex values, 1-indexed
+	data = calloc(2*N, sizeof(double)); // Flattened data array, 2*N^2 to hold complex values, 1-indexed
+	ksq = malloc(N * sizeof(double)); // Flattened data array, 2*N^2 to hold complex values, 1-indexed
 	unsigned long nn = N; // Size of all dims (uses 1-indexing so first element is padding)
 	
-	float *phi = vector(1, N);   // Solution in real space
+	double *phi = malloc(N * sizeof(double));   // Solution in real space
 
 	// Initialize the data
 	initialize_rhs(data);
 
-	for (i = 1; i <= 2*N; i+=2) {
+	for (i = 0; i < 2*N; i+=2) {
 		printf("%f ", data[i]);
 	}
 	printf("\n");
@@ -88,19 +139,19 @@ int main() {
 	four1(data, nn, -1);
 
 	// Copy data array back to phi
-	for (i = 1; i <= N; i++) {
-		phi[i] = data[2*(i-1)+1] * 1 / N; // Normalize the solution
+	for (i = 0; i < N; i++) {
+		phi[i] = data[2*i] * 1 / N; // Normalize the solution
 	}
 
 	// Print the solution values
-	for (i = 1; i <= N; i++) {
-		printf("%f ", phi[i] - phi[1]);
+	for (i = 0; i < N; i++) {
+		printf("%f ", phi[i] - phi[0]);
 	}
 
 	// Clean up
-	free_vector(phi, 1, N);
-	free_vector(ksq, 0, N-1);
-	free_vector(data, 1, 2*N);
+	free(data);
+	free(ksq);
+	free(phi);
 
 	return 0;
 }
